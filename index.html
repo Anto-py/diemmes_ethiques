@@ -1,0 +1,648 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Tribunal des dilemmes — Tirage au sort</title>
+<link rel="stylesheet" href="retro-base.css">
+<style>
+  /* ====== Layout général ====== */
+  .stage {
+    min-height: 420px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    perspective: 1200px;
+    margin: 24px 0 32px;
+    position: relative;
+  }
+
+  .deck {
+    position: relative;
+    width: 220px;
+    height: 320px;
+  }
+
+  .card {
+    position: absolute;
+    inset: 0;
+    border-radius: 14px;
+    transform-style: preserve-3d;
+    transition: transform 600ms cubic-bezier(.2,.8,.2,1);
+    will-change: transform;
+  }
+
+  .card-face {
+    position: absolute;
+    inset: 0;
+    border-radius: 14px;
+    backface-visibility: hidden;
+    -webkit-backface-visibility: hidden;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    overflow: hidden;
+  }
+
+  /* Dos de carte (motif rétro) */
+  .card-back {
+    background:
+      repeating-linear-gradient(45deg, var(--retro-teal) 0 14px, #0e5e5e 14px 28px);
+    border: 4px solid var(--retro-orange);
+    box-shadow: 0 6px 0 rgba(0,0,0,.25), inset 0 0 0 4px var(--retro-paper);
+  }
+  .card-back::after {
+    content: '⚖';
+    font-size: 5rem;
+    color: var(--retro-jaune);
+    text-shadow: 0 0 0 2px var(--retro-ink);
+    filter: drop-shadow(2px 2px 0 var(--retro-ink));
+  }
+
+  /* Face avant (prénom) */
+  .card-front {
+    background: var(--retro-paper);
+    border: 4px solid var(--retro-teal);
+    box-shadow: inset 0 0 0 3px var(--retro-orange);
+    transform: rotateY(180deg);
+    flex-direction: column;
+    padding: 20px;
+    text-align: center;
+  }
+  .card-front .num {
+    font-family: 'Oswald', sans-serif;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.2em;
+    color: var(--retro-orange);
+    font-size: 0.8rem;
+  }
+  .card-front .name {
+    font-family: 'Anton', sans-serif;
+    text-transform: uppercase;
+    color: var(--retro-teal);
+    font-size: 2.4rem;
+    line-height: 1;
+    letter-spacing: 0.04em;
+    margin-top: 12px;
+  }
+  .card-front .deco {
+    margin-top: 18px;
+    font-size: 2rem;
+    color: var(--retro-jaune);
+  }
+
+  /* Etats animés */
+  .card.flipped { transform: rotateY(180deg); }
+  .card.lift { transform: translateY(-30px) rotateZ(0deg); }
+
+  /* Empilage initial */
+  .deck.idle .card:nth-child(1) { transform: translate(-2px, -3px) rotate(-3deg); }
+  .deck.idle .card:nth-child(2) { transform: translate(2px, -1px) rotate(2deg); }
+  .deck.idle .card:nth-child(3) { transform: translate(0px, 0px) rotate(0deg); }
+  .deck.idle .card:nth-child(4) { transform: translate(-1px, 2px) rotate(-1deg); }
+  .deck.idle .card:nth-child(5) { transform: translate(3px, 3px) rotate(3deg); }
+
+  /* Animation de mélange */
+  @keyframes shuffle1 {
+    0%   { transform: translate(0,0) rotate(0); }
+    25%  { transform: translate(-180px, -40px) rotate(-25deg); }
+    50%  { transform: translate(160px, 30px) rotate(20deg); }
+    75%  { transform: translate(-90px, 50px) rotate(-12deg); }
+    100% { transform: translate(-2px, -3px) rotate(-3deg); }
+  }
+  @keyframes shuffle2 {
+    0%   { transform: translate(0,0) rotate(0); }
+    25%  { transform: translate(170px, -30px) rotate(22deg); }
+    50%  { transform: translate(-150px, 50px) rotate(-18deg); }
+    75%  { transform: translate(120px, -60px) rotate(15deg); }
+    100% { transform: translate(2px, -1px) rotate(2deg); }
+  }
+  @keyframes shuffle3 {
+    0%   { transform: translate(0,0) rotate(0); }
+    25%  { transform: translate(-140px, 60px) rotate(-20deg); }
+    50%  { transform: translate(140px, -50px) rotate(18deg); }
+    75%  { transform: translate(-60px, -40px) rotate(-8deg); }
+    100% { transform: translate(0,0) rotate(0); }
+  }
+  @keyframes shuffle4 {
+    0%   { transform: translate(0,0) rotate(0); }
+    25%  { transform: translate(150px, 50px) rotate(15deg); }
+    50%  { transform: translate(-170px, -40px) rotate(-22deg); }
+    75%  { transform: translate(80px, 60px) rotate(10deg); }
+    100% { transform: translate(-1px, 2px) rotate(-1deg); }
+  }
+  @keyframes shuffle5 {
+    0%   { transform: translate(0,0) rotate(0); }
+    25%  { transform: translate(-160px, -50px) rotate(-18deg); }
+    50%  { transform: translate(180px, 40px) rotate(25deg); }
+    75%  { transform: translate(-100px, 30px) rotate(-10deg); }
+    100% { transform: translate(3px, 3px) rotate(3deg); }
+  }
+  .deck.shuffling .card:nth-child(1) { animation: shuffle1 1.4s cubic-bezier(.4,.1,.3,1); }
+  .deck.shuffling .card:nth-child(2) { animation: shuffle2 1.4s cubic-bezier(.4,.1,.3,1); }
+  .deck.shuffling .card:nth-child(3) { animation: shuffle3 1.4s cubic-bezier(.4,.1,.3,1); }
+  .deck.shuffling .card:nth-child(4) { animation: shuffle4 1.4s cubic-bezier(.4,.1,.3,1); }
+  .deck.shuffling .card:nth-child(5) { animation: shuffle5 1.4s cubic-bezier(.4,.1,.3,1); }
+
+  /* Carte tirée (saut + flip) */
+  @keyframes drawn {
+    0%   { transform: translateY(0) rotate(0); }
+    35%  { transform: translateY(-60px) rotate(-4deg) scale(1.05); }
+    70%  { transform: translateY(-50px) rotate(3deg) rotateY(180deg) scale(1.05); }
+    100% { transform: translateY(0) rotate(0) rotateY(180deg) scale(1.08); }
+  }
+  .card.drawn { animation: drawn 1.2s cubic-bezier(.2,.7,.3,1) forwards; z-index: 10; }
+
+  /* ====== Contrôles ====== */
+  .controls {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 16px;
+    justify-content: center;
+    margin-top: 12px;
+  }
+
+  .retro-btn-pill { background: transparent; font: inherit; }
+  .retro-btn-pill:disabled { opacity: 0.5; cursor: not-allowed; }
+  .retro-btn-pill.secondary { border-color: var(--retro-orange); }
+  .retro-btn-pill.secondary .label { background: var(--retro-paper); color: var(--retro-ink); }
+  .retro-btn-pill.secondary .icon  { background: var(--retro-teal); }
+
+  /* ====== Compteur ====== */
+  .counter {
+    text-align: center;
+    font-family: 'Oswald', sans-serif;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.15em;
+    color: var(--retro-teal);
+    font-size: 0.85rem;
+    margin-top: 24px;
+  }
+  .counter span { color: var(--retro-orange); font-size: 1.1rem; }
+
+  /* ====== Panneau du cas ====== */
+  .case-panel {
+    margin-top: 40px;
+    background: var(--retro-paper);
+    border: 3px solid var(--retro-teal);
+    border-radius: 24px 8px 24px 8px;
+    box-shadow: 6px 6px 0 var(--retro-orange);
+    overflow: hidden;
+    opacity: 0;
+    transform: translateY(20px);
+    transition: opacity 500ms ease, transform 500ms ease;
+    pointer-events: none;
+  }
+  .case-panel.visible {
+    opacity: 1;
+    transform: translateY(0);
+    pointer-events: auto;
+  }
+
+  .case-header {
+    background: var(--retro-ink);
+    padding: 22px 28px;
+    position: relative;
+    display: flex;
+    align-items: center;
+    gap: 20px;
+    flex-wrap: wrap;
+  }
+  .case-header::after {
+    content: '';
+    position: absolute;
+    bottom: 0; left: 0; right: 0;
+    height: 3px;
+    background: linear-gradient(90deg, var(--retro-teal), var(--retro-orange), var(--retro-jaune));
+  }
+  .case-num-badge {
+    font-family: 'Oswald', sans-serif;
+    font-weight: 700;
+    text-transform: uppercase;
+    font-size: 0.75rem;
+    letter-spacing: 0.15em;
+    background: var(--retro-orange);
+    color: var(--retro-paper);
+    padding: 6px 16px;
+    border-radius: 50px;
+  }
+  .case-title {
+    font-family: 'Anton', sans-serif;
+    text-transform: uppercase;
+    color: var(--retro-paper);
+    font-size: 1.6rem;
+    line-height: 1.1;
+    letter-spacing: 0.04em;
+    flex: 1;
+    min-width: 200px;
+  }
+  .case-name-tag {
+    font-family: 'Oswald', sans-serif;
+    color: var(--retro-jaune);
+    text-transform: uppercase;
+    letter-spacing: 0.12em;
+    font-size: 0.85rem;
+  }
+
+  .case-body {
+    padding: 28px 32px;
+    font-size: 1.05rem;
+    line-height: 1.7;
+    color: var(--retro-ink);
+  }
+  .case-body p { margin-bottom: 12px; }
+  .case-body ul { margin: 12px 0 12px 24px; }
+  .case-body li { margin-bottom: 8px; }
+
+  .case-actions {
+    display: flex;
+    gap: 12px;
+    padding: 0 32px 28px;
+    flex-wrap: wrap;
+  }
+
+  .toast {
+    position: fixed;
+    bottom: 30px;
+    left: 50%;
+    transform: translateX(-50%) translateY(80px);
+    background: var(--retro-teal);
+    color: var(--retro-paper);
+    padding: 12px 24px;
+    border-radius: 50px;
+    font-family: 'Oswald', sans-serif;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    font-size: 0.85rem;
+    box-shadow: 4px 4px 0 var(--retro-orange);
+    transition: transform 400ms cubic-bezier(.2,.8,.2,1);
+    z-index: 100;
+  }
+  .toast.show { transform: translateX(-50%) translateY(0); }
+
+  .empty-state {
+    text-align: center;
+    padding: 40px 20px;
+    color: var(--retro-teal);
+    font-family: 'Oswald', sans-serif;
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+  }
+
+  @media (max-width: 600px) {
+    .deck { width: 180px; height: 260px; }
+    .card-back::after { font-size: 3.6rem; }
+    .card-front .name { font-size: 1.8rem; }
+    .case-body { padding: 20px; font-size: 0.98rem; }
+    .case-actions { padding: 0 20px 20px; }
+  }
+</style>
+</head>
+<body>
+  <div class="page-frame">
+    <header class="header-band">
+      <div>
+        <h1 class="page-title">Tribunal des dilemmes</h1>
+        <p class="page-subtitle">Tirage au sort des cas pratiques</p>
+      </div>
+      <span class="badge-seq">Séquence 2 — Partie B</span>
+    </header>
+
+    <div class="stage">
+      <div class="deck idle" id="deck">
+        <div class="card"><div class="card-face card-back"></div><div class="card-face card-front"><span class="num"></span><span class="name"></span><span class="deco">⚖</span></div></div>
+        <div class="card"><div class="card-face card-back"></div><div class="card-face card-front"><span class="num"></span><span class="name"></span><span class="deco">⚖</span></div></div>
+        <div class="card"><div class="card-face card-back"></div><div class="card-face card-front"><span class="num"></span><span class="name"></span><span class="deco">⚖</span></div></div>
+        <div class="card"><div class="card-face card-back"></div><div class="card-face card-front"><span class="num"></span><span class="name"></span><span class="deco">⚖</span></div></div>
+        <div class="card"><div class="card-face card-back"></div><div class="card-face card-front"><span class="num"></span><span class="name"></span><span class="deco">⚖</span></div></div>
+      </div>
+    </div>
+
+    <div class="controls">
+      <button class="retro-btn-pill" id="drawBtn">
+        <span class="label">Tirer un cas</span>
+        <span class="icon">🎴</span>
+      </button>
+      <button class="retro-btn-pill secondary" id="resetBtn">
+        <span class="label">Réinitialiser le paquet</span>
+        <span class="icon">↻</span>
+      </button>
+    </div>
+
+    <p class="counter">Cartes restantes : <span id="remaining">20</span> / 20</p>
+
+    <article class="case-panel" id="casePanel">
+      <header class="case-header">
+        <span class="case-num-badge" id="caseNumBadge"></span>
+        <h2 class="case-title" id="caseTitle"></h2>
+        <span class="case-name-tag" id="caseNameTag"></span>
+      </header>
+      <div class="case-body" id="caseBody"></div>
+      <div class="case-actions">
+        <button class="retro-btn-pill" id="copyBtn">
+          <span class="label">Copier le cas</span>
+          <span class="icon">📋</span>
+        </button>
+      </div>
+    </article>
+  </div>
+
+  <div class="toast" id="toast">Copié dans le presse-papier</div>
+
+<script>
+const CASES = [
+  {
+    n: 1,
+    name: "Mireille",
+    title: "Le bulletin rédigé par l'IA",
+    body: "<p>Mireille enseigne depuis huit ans à des classes de 4e primaire. Cette année, elle a 28 élèves et chaque période de bulletins lui prend trois soirées entières — elle finit souvent à minuit, fatiguée, à recopier des formules qu'elle a l'impression d'avoir déjà écrites cent fois. Au mois de novembre, une collègue lui parle de ChatGPT.</p><p>Désormais, Mireille tape ses notes manuscrites pour chaque élève (« attentif mais lent en lecture », « progrès en math, agité en groupe », « élève fragile, manque de confiance ») et demande à l'IA de les transformer en commentaires de bulletin. Elle relit, ajuste un mot ici, ajoute une nuance là, valide. En deux heures, les 28 commentaires sont prêts.</p><p>Aux réunions de parents, plusieurs familles la félicitent : « On voit que vous connaissez vraiment notre fils, vos commentaires sont si justes. » L'année précédente, certains parents s'étaient plaints du manque de personnalisation. Mireille n'a parlé de sa nouvelle méthode à personne — pas même à la direction, pas même à son binôme.</p>"
+  },
+  {
+    n: 2,
+    name: "Thomas",
+    title: "Le plan d'intervention généré en deux minutes",
+    body: "<p>Thomas est professeur référent pour les élèves à besoins spécifiques dans un grand établissement secondaire. Il suit 47 dossiers cette année, en plus de ses heures de cours. Une nouvelle élève vient d'arriver : Émilie, 13 ans, diagnostiquée dyslexique sévère par la logopède du centre PMS. Le rapport fait six pages denses.</p><p>Le règlement impose un Plan Individuel d'Apprentissage rédigé et signé sous quinze jours. Thomas est déjà en retard sur quatre autres dossiers. Il copie-colle le diagnostic dans une IA et lui demande de produire un PIA complet : objectifs pédagogiques, aménagements, modalités d'évaluation, suivi trimestriel, recommandations aux enseignants de chaque discipline.</p><p>Le document généré est structuré, professionnel, parfaitement conforme à la trame officielle de la Fédération. Thomas le parcourt rapidement, modifie deux phrases, signe et l'envoie à la direction et aux parents. Le PIA porte son nom. Il l'engage juridiquement face à la famille, à l'établissement et à l'inspection.</p>"
+  },
+  {
+    n: 3,
+    name: "Samira",
+    title: "L'IA décide qui a triché",
+    body: "<p>Samira, 17 ans, élève en 6e secondaire, rend une dissertation de français sur Zola. Elle y a consacré trois soirées, en s'aidant d'un manuel de référence et de ses notes de cours. Le travail est soigné, bien construit, le vocabulaire est riche — Samira est une bonne élève, lectrice depuis l'enfance.</p><p>L'établissement vient de souscrire à un outil de détection automatique de contenus IA. Le travail de Samira est analysé : score de 87 % de probabilité « généré par IA ». La professeure de français convoque Samira dès le lendemain matin, lui montre la capture d'écran du rapport, et lui annonce un zéro pour le travail ainsi qu'une mention au dossier disciplinaire.</p><p>Samira proteste, jure n'avoir utilisé aucune IA, propose de réécrire la dissertation à la main, sur place, devant la professeure. Celle-ci refuse : « L'outil ne se trompe presque jamais à ce niveau de score. » L'outil, lui, ne fournit aucune justification : juste un pourcentage, sans extraits surlignés, sans explication de méthode. Les parents de Samira demandent un rendez-vous avec la direction.</p>"
+  },
+  {
+    n: 4,
+    name: "Aïcha",
+    title: "L'assistant pédagogique qui remplace l'accompagnement humain",
+    body: "<p>L'école d'Aïcha souffre d'un manque chronique de personnel : trois départs non remplacés cette année, deux collègues en burn-out. La direction signe un contrat avec une start-up qui propose un chatbot pédagogique disponible 24h/24, accessible aux élèves de terminale via leurs smartphones. Coût : 8 € par élève par mois, à charge de l'établissement. L'outil répond aux questions de math, physique, français, langues.</p><p>Aïcha enseigne les mathématiques en 6e secondaire. Au début, elle est sceptique mais accepte. Trois mois plus tard, elle constate un changement net : plus aucune main ne se lève en cours. Quand elle propose des moments de questions, le silence s'installe. Une élève lui dit franchement : « C'est plus simple de demander au bot, madame, il ne juge pas, il répond tout de suite, et il est patient quand je redemande dix fois. »</p><p>Les notes restent stables. La direction parle d'une « expérience réussie » et envisage d'étendre le dispositif aux 5e. Aïcha se demande ce qu'elle voit disparaître exactement, et si ce qui disparaît a un nom.</p>"
+  },
+  {
+    n: 5,
+    name: "Yannick",
+    title: "La lettre de motivation pour l'élève",
+    body: "<p>Yannick, professeur de français en 6e secondaire, accompagne chaque année ses élèves dans la rédaction de leur lettre de motivation pour l'enseignement supérieur. La plupart de ses élèves viennent de milieux où personne dans la famille n'a fréquenté l'université ; certains n'ont jamais écrit de courrier formel.</p><p>Cette année, il innove. Il fait remplir à chaque élève un formulaire détaillé (parcours, motivations, projet, anecdotes personnelles), puis injecte ces informations dans une IA pour produire une première version. Il imprime cette version, s'assoit avec l'élève une demi-heure, et retravaille phrase par phrase : « ce mot ne te ressemble pas », « cette tournure est trop pompeuse », « raconte plutôt comme tu me l'as dit hier ».</p><p>Les lettres finales sont solides. Plusieurs élèves obtiennent des places dans des filières sélectives. Aucune mention de l'IA n'apparaît dans les courriers envoyés aux universités et hautes écoles, ni dans les déclarations sur l'honneur que les élèves ont signées attestant que la lettre est « rédigée personnellement ».</p>"
+  },
+  {
+    n: 6,
+    name: "Sandrine",
+    title: "Le cours « augmenté » sans le dire",
+    body: "<p>Sandrine enseigne l'histoire en secondaire depuis 12 ans. Depuis un an, elle prépare la quasi-totalité de ses cours avec une IA : synthèses thématiques, chronologies, frises, cartes mentales, banques de questions de compréhension, scénarios pédagogiques différenciés selon les niveaux. Elle vérifie systématiquement les dates et les faits, croise avec ses manuels universitaires.</p><p>Ses élèves disent que ses cours sont parmi les plus clairs de leur scolarité ; les évaluations PIA de l'établissement la placent en tête du département. En réunion d'équipe, ses collègues lui demandent comment elle fait pour produire autant de matériel de qualité. Elle répond qu'elle « travaille beaucoup » et change de sujet.</p><p>Lors d'une formation interne sur l'IA, un collègue affirme devant la salle que « les enseignants qui utilisent l'IA en cachette manquent de courage professionnel ». Sandrine ne réagit pas. Elle se demande si déclarer son usage en pleine salle des profs serait du courage ou de l'imprudence — plusieurs collègues plus âgés y voient ouvertement de la triche.</p>"
+  },
+  {
+    n: 7,
+    name: "Pierre",
+    title: "L'image générée présentée comme authentique",
+    body: "<p>Pierre prépare une séquence sur la Seconde Guerre mondiale en 4e secondaire. Pour illustrer le chapitre sur l'exode et les déplacements de populations, il cherche en vain une photographie d'archive qui correspond exactement à l'angle qu'il veut traiter : une famille en marche, vue de dos, route de campagne, automne. Il finit par générer l'image avec un outil IA : noir et blanc, vêtements d'époque, valises en carton, expressions graves, lumière rasante.</p><p>L'image est saisissante. Pierre la projette pendant le cours sans préciser son origine. Plusieurs élèves prennent des notes, l'un d'eux la photographie avec son téléphone et la partage dans le groupe de classe. Lors de l'évaluation deux semaines plus tard, deux élèves citent l'image dans leur travail comme « source photographique de la période », l'un d'eux en l'attribuant même à un photographe inventé.</p><p>Quand Pierre s'en rend compte à la correction, il hésite. Le cours suivant, il se contente de mettre un commentaire dans la marge des copies, sans aborder la question en classe.</p>"
+  },
+  {
+    n: 8,
+    name: "Joëlle",
+    title: "L'évaluation corrompue par l'IA à l'insu de l'élève",
+    body: "<p>Joëlle corrige chaque semaine une trentaine de productions écrites en français, en 5e secondaire. Pour gagner du temps et « se rassurer », elle a pris l'habitude de soumettre chaque copie à une IA en lui demandant : « Évalue ce travail sur 20, justifie en trois lignes, identifie les forces et les faiblesses. »</p><p>Elle compare ensuite avec son intuition. Quand l'IA suggère 12 et qu'elle pensait à 14, elle se range souvent à l'avis de l'IA — « après tout, elle a peut-être vu quelque chose que j'ai manqué ». En quelques mois, elle se rend compte qu'elle ne décide plus vraiment seule : ses notes finales s'alignent dans 80 % des cas sur l'évaluation algorithmique.</p><p>Aucun élève, aucun parent, aucun collègue n'est au courant. Sur les bulletins, c'est sa signature qui apparaît, et la note est présentée comme le fruit de son jugement professionnel. Quand un parent conteste une note, c'est elle qui défend l'évaluation — sans dire qu'elle s'appuie sur une analyse qu'elle n'a pas produite.</p>"
+  },
+  {
+    n: 9,
+    name: "Catherine",
+    title: "L'avantage invisible",
+    body: "<p>Catherine enseigne le français en 3e secondaire. Depuis quelques mois, elle remarque que les rédactions de trois élèves — Julie, Hugo et Maxime — ont fait un bond qualitatif : structure impeccable, transitions fluides, vocabulaire soutenu. Aucun lien avec leur niveau à l'oral ou en classe, où ils restent moyens.</p><p>Lors d'une réunion de parents, la mère de Julie lui confie spontanément : « On a pris l'abonnement premium à ChatGPT pour toute la famille, ça les aide tellement pour leurs devoirs et leurs rédactions. » Catherine comprend que ces trois élèves utilisent systématiquement l'IA pour reformuler leurs textes avant de les rendre.</p><p>Les 19 autres élèves de la classe n'ont pas d'abonnement. Plusieurs n'ont même pas d'ordinateur fixe à la maison ; deux partagent un seul smartphone familial. Au prochain conseil de classe, c'est Julie, Hugo et Maxime qui seront cités en exemple pour « la qualité de leur expression écrite ». Catherine doit décider quoi faire pour la prochaine évaluation : interdire ? équiper tout le monde ? changer la nature de l'épreuve ?</p>"
+  },
+  {
+    n: 10,
+    name: "Lucas",
+    title: "L'élève à besoins spécifiques et l'IA comme béquille permanente",
+    body: "<p>Lucas, 14 ans, est dyspraxique. Écrire à la main lui demande un effort tel qu'au bout de cinq lignes, il abandonne, le poignet douloureux. À l'oral, il analyse, argumente, raisonne avec une finesse remarquable — sa logopède l'a souvent souligné dans ses rapports.</p><p>Depuis la rentrée, l'école lui autorise à utiliser une IA pour structurer et rédiger ses textes en classe. Il dicte ses idées, l'IA met en forme, il relit et valide. Ses productions écrites passent de 8/20 à 16/20 en moins de deux mois. Pour la première fois de sa scolarité, Lucas dit à ses parents qu'il « peut écrire » et qu'il aime ça.</p><p>Son enseignante de français observe autre chose. Lucas ne tente plus jamais d'écrire sans l'IA, même pour deux lignes au tableau, même pour un mot dans son agenda. Quand l'outil est indisponible, il se bloque complètement, anxieux. Sa logopède s'inquiète d'une régression sur les exercices d'écriture manuelle qu'elle lui propose en séance.</p>"
+  },
+  {
+    n: 11,
+    name: "Fatima",
+    title: "Les stéréotypes de genre dans le cours de technologie",
+    body: "<p>Fatima enseigne la technologie en 1re et 2e secondaire. Elle prépare une séquence sur les métiers techniques et demande à une IA de générer un dossier complet : exercices, fiches métiers, illustrations en couleur prêtes à imprimer.</p><p>En relisant le matériel la veille du cours, elle remarque que tous les ingénieurs, techniciens, mécaniciens, électriciens, soudeurs sont représentés par des hommes blancs d'une trentaine d'années. Les seules figures féminines apparaissent dans les fiches « infirmière », « éducatrice », « secrétaire ». Sur les 24 illustrations du dossier, deux seulement montrent une femme, aucune dans un métier technique. Trois illustrations comportent des personnes racisées, toutes en arrière-plan.</p><p>Fatima a son cours dans 90 minutes, le dossier est déjà imprimé en 22 exemplaires. Elle se dit que « la prochaine fois » elle prendra le temps de regénérer ou d'illustrer autrement. Elle distribue le dossier tel quel à ses 22 élèves, dont 9 filles, dont 4 issues de l'immigration.</p>"
+  },
+  {
+    n: 12,
+    name: "Bruno",
+    title: "L'IA parle une seule langue",
+    body: "<p>Bruno enseigne dans une classe d'accueil DASPA composée d'élèves primo-arrivants : Syriens, Afghans, Ukrainiens, Haïtiens, Maliens, Vénézuéliens. Les niveaux de français sont très hétérogènes, les parcours souvent traumatiques. Pour gagner du temps face à un public qui change toutes les semaines, il utilise une IA pour générer des supports en français simplifié.</p><p>Les contenus sont effectivement plus accessibles que les manuels classiques. Mais en relisant attentivement, Bruno relève une série de formulations qui le mettent mal à l'aise. Il hésite : faut-il tout réécrire à la main, sachant qu'il n'en aura jamais le temps, ou utiliser ces supports « pas parfaits mais mieux que rien » ?</p><p>Parmi les formulations relevées :</p><ul><li><em>« Demande à tes parents de signer le document »</em> — adressé à un élève non accompagné, sans référent familial en Belgique.</li><li><em>« Comme vous le savez, Noël approche, voici une activité sur les traditions de fêtes »</em> — sans aucune adaptation au pluralisme religieux et culturel de la classe.</li><li><em>« Le chef de famille doit donner son accord écrit »</em> — formulation qui invisibilise les familles monoparentales, les tutrices légales ou les structures familiales non occidentales.</li><li><em>« Dans ton pays, on mange souvent… »</em> — phrase qui assigne une origine supposée à l'élève à partir de son prénom et le renvoie à une identité étrangère plutôt qu'à son expérience réelle.</li></ul>"
+  },
+  {
+    n: 13,
+    name: "Élodie",
+    title: "La dissertation assistée acceptée",
+    body: "<p>Élodie enseigne le français en classe de rhétorique. Au début de l'année, elle pose un cadre clair avec ses élèves : pour la dissertation finale, ils peuvent utiliser une IA pour structurer leur plan, brainstormer des arguments, vérifier des références, mais la rédaction du texte doit être 100 % personnelle. Elle fait signer une charte d'usage.</p><p>Elle reçoit 26 dissertations sur le sujet « Faut-il préférer l'expérience au savoir ? ». À la correction, elle reconnaît dans 18 d'entre elles le même squelette argumentatif : trois parties identiques, mêmes auteurs cités dans le même ordre (Montaigne, Bachelard, Rousseau), mêmes connecteurs logiques, mêmes exemples (le voyage initiatique, l'apprenti, le scientifique). Les développements sont rédigés différemment, mais la pensée sous-jacente est partout la même — celle de l'IA.</p><p>Quand elle interroge oralement quelques élèves sur leur démarche, plusieurs répondent avec naturel : « J'ai réfléchi avec ChatGPT, et puis j'ai écrit ce qu'on avait trouvé ensemble. » Pour eux, c'est exactement ce qu'Élodie avait autorisé.</p>"
+  },
+  {
+    n: 14,
+    name: "Matteo",
+    title: "L'IA corrige et l'élève ne comprend plus ses erreurs",
+    body: "<p>Matteo, 16 ans, est en 5e secondaire. Il déteste l'anglais depuis le primaire — trop de règles, trop d'humiliations en lecture à voix haute. Depuis qu'il a découvert qu'une IA pouvait corriger ses textes en quelques secondes, il s'en sert systématiquement avant chaque remise : il écrit, copie-colle dans l'IA, demande « corrige les fautes mais garde mon style adolescent », recopie le résultat à la main, rend.</p><p>Ses notes passent de 9/20 à 15/20 en deux mois. Il est content. Sa mère est ravie et le félicite à chaque bulletin.</p><p>Son professeur d'anglais, John, organise une rédaction surveillée en classe, sans appareil, sans dictionnaire. Matteo rend une copie de niveau A1, criblée d'erreurs basiques sur les temps, les accords sujet-verbe, l'orthographe des mots les plus courants — exactement les erreurs qu'il faisait il y a six mois. John réalise que pendant tout ce temps, Matteo n'a strictement rien appris ; et que dans deux ans, à l'examen d'État, l'IA ne sera pas là.</p>"
+  },
+  {
+    n: 15,
+    name: "Nadia",
+    title: "La réponse immédiate qui court-circuite la réflexion",
+    body: "<p>L'école primaire de Nadia a installé un assistant IA dans les classes de 5e et 6e pour aider les élèves en autonomie pendant que l'enseignant travaille avec d'autres groupes. L'outil répond gentiment aux questions des enfants, reformule, donne des exemples, encourage. La direction est ravie : moins de bruit, plus d'élèves « occupés ».</p><p>Trois mois plus tard, Nadia et plusieurs collègues observent un changement frappant. Avant : un élève bloqué relisait la consigne, demandait à un voisin, cherchait dans son cahier, levait la main, essayait. Maintenant : il pose la question à l'IA dans la seconde, même quand il s'agit d'une consigne qu'il pourrait comprendre seul s'il prenait dix secondes pour la relire.</p><p>Lorsque l'outil tombe en panne pendant deux jours suite à une mise à jour, plusieurs enfants restent figés devant leur feuille blanche, paniqués. Une élève de 6e dit à Nadia : « Sans l'assistant, madame, je ne sais pas comment faire. » Elle a 11 ans.</p>"
+  },
+  {
+    n: 16,
+    name: "Vincent",
+    title: "L'IA remplace la mémorisation",
+    body: "<p>Vincent enseigne les sciences sociales en 5e et 6e secondaire. Cette année, il prend une décision radicale qu'il assume publiquement en réunion de département : il ne testera plus la mémorisation de dates, de noms ou de faits historiques. À l'examen, ses élèves auront accès à une IA et à internet. Il évaluera uniquement leur capacité à analyser, contextualiser, argumenter, croiser des sources.</p><p>Sa position : « À quoi bon faire mémoriser la date du Congrès de Vienne ou les articles de la Constitution belge, quand n'importe qui peut les obtenir en deux secondes ? Je veux des esprits qui pensent, pas des disques durs concurrents de Wikipédia. »</p><p>Au conseil de département, deux collègues s'y opposent vivement : sans connaissances mémorisées, disent-ils, l'élève ne peut pas penser, il ne peut que reformuler ce que l'IA lui sert. « Tu prépares des manipulables, pas des citoyens. » Le débat divise la salle des profs. La direction demande à Vincent de présenter et défendre sa démarche au prochain conseil de participation.</p>"
+  },
+  {
+    n: 17,
+    name: "Hélène",
+    title: "Signaler ou protéger ?",
+    body: "<p>Hélène enseigne le français en 4e secondaire. Pour un travail d'écriture créative, elle a demandé à ses élèves d'imaginer une scène domestique vue à travers les yeux d'un personnage adolescent. Elle reçoit le texte de Léa, 15 ans, et s'arrête net en le lisant.</p><p>Le récit décrit, à la première personne, un dimanche soir où le père rentre tard, ferme les volets, hausse la voix, où la mère s'efface dans la cuisine, où la narratrice s'enferme dans la salle de bain. Les détails sont précis : l'odeur de bière, le bruit d'une assiette qui se brise contre le mur, la phrase rituelle « tu sais ce qui arrive si tu parles à quelqu'un ». Aucun élément ne dépasse ce qu'on lit dans certaines œuvres au programme — mais quelque chose dans la texture du texte met Hélène mal à l'aise.</p><p>Léa est une élève brillante qui utilise probablement une IA pour ses travaux écrits. Hélène le sait, plusieurs détails l'ont déjà laissée penser. Elle se demande : et si le texte n'avait été que prompté à partir d'une consigne du type « rédige une scène de violence familiale réaliste à la première personne » ? Signaler au PMS sur la base d'une fiction générée serait absurde et stigmatisant. Ne rien faire, si le récit dit vrai, serait une faute professionnelle grave.</p>"
+  },
+  {
+    n: 18,
+    name: "Marc",
+    title: "La note de l'IA contre la note de l'enseignant",
+    body: "<p>Marc, professeur de physique en 5e secondaire, rend les copies d'un travail d'argumentation scientifique sur l'énergie nucléaire. Hugo reçoit un 6/20 avec ce commentaire écrit en rouge : « Argumentation faible, sources non hiérarchisées, raisonnement circulaire sur la question des déchets. »</p><p>Hugo conteste dès la sonnerie. Le lendemain, il revient avec une capture d'écran : il a soumis exactement le même travail à l'IA que la classe utilise depuis le début de l'année (avec l'autorisation explicite du cours), en lui demandant d'évaluer « selon les critères d'un travail de 5e secondaire en physique en Fédération Wallonie-Bruxelles ». L'IA a répondu : 15/20, « argumentation structurée, bonne mobilisation de sources scientifiques, conclusion nuancée ».</p><p>Hugo écrit un mail au directeur en mettant Marc en copie : il demande un arbitrage formel sur la cohérence entre l'évaluation IA recommandée par le cours et celle de l'enseignant. Trois autres élèves, qui ont fait la même vérification après lui, signent le mail. Le directeur convoque Marc le lendemain matin.</p>"
+  },
+  {
+    n: 19,
+    name: "Karim",
+    title: "Prévenir les comportements à risque ou surveiller les élèves ?",
+    body: "<p>Karim dirige un grand établissement secondaire de 1 200 élèves. Suite à plusieurs incidents difficiles l'an dernier — un cas de harcèlement non détecté à temps qui a conduit une élève à changer d'école, une tentative de suicide d'un élève de 4e, un signalement tardif d'une dérive radicale — son équipe lui propose de tester un outil IA qui analyserait en continu les publications des élèves sur l'intranet scolaire et les groupes Teams de l'école.</p><p>L'outil promet de détecter automatiquement les signaux faibles : isolement, expressions de mal-être, propos haineux, indices d'idéation suicidaire ou de radicalisation. Il enverrait une alerte au PMS et à la direction lorsqu'un seuil de probabilité est franchi. Coût annuel : 12 000 €. Le fournisseur affirme qu'aucune donnée n'est exportée hors de l'établissement et que l'outil est « conforme RGPD ».</p><p>Le conseil de participation est divisé. Le PMS y voit une chance d'intervenir plus tôt et soutient le projet. Une représentante des parents évoque la surveillance généralisée et compare l'outil à un « petit panoptique scolaire ». Un élève délégué demande qui décide ce qui est « inquiétant » et ce qui ne l'est pas, et qui audite l'algorithme. Karim doit trancher avant la fin du mois pour signer le contrat.</p>"
+  },
+  {
+    n: 19,
+    name: "Karim",
+    title: "Prévenir les comportements à risque ou surveiller les élèves ?",
+    body: "<p>L'établissement dirigé par Karim envisage d'utiliser une IA pour analyser les publications des élèves sur les réseaux scolaires internes afin de détecter des signaux de mal-être, d'intimidation ou de radicalisation. L'outil permettrait d'intervenir plus tôt auprès des élèves en difficulté.</p>"
+  },
+  {
+    n: 20,
+    name: "Léa",
+    title: "L'IA confidentielle de l'élève",
+    body: "<p>Léa, 17 ans, est en 6e secondaire. Élève discrète, plutôt solitaire, bonne en classe, jamais convoquée. Depuis un an, elle utilise quotidiennement un chatbot IA grand public, payant, sur son téléphone. Elle l'a paramétré comme un confident permanent : elle lui parle de ses crises d'angoisse nocturnes, de la dépression de sa mère, des disputes avec son père, de ses pensées les plus sombres et de ses doutes sur son orientation. Elle a expliqué à une amie qu'elle « lui dit des choses qu'elle ne dirait à personne d'autre, jamais ».</p><p>Son professeur principal, Antoine, l'apprend par hasard : Léa a oublié son téléphone en classe, écran allumé, et une notification de l'application affichait un échange visible. Antoine n'a pas lu en détail, mais il a saisi la nature de la relation — l'application s'adresse à Léa par son prénom, sur un ton tendre, et lui rappelle « notre conversation d'hier soir sur ton père ».</p><p>Antoine se demande quoi faire. Aller voir Léa pour en parler ? Prévenir le PMS ? Contacter les parents — qui ignorent peut-être tout, et dont Léa fuit justement le contrôle ? Ne rien faire, au nom de la vie privée d'une mineure presque majeure ? Il ne sait même pas si l'entreprise qui exploite l'application a des obligations en cas de signaux suicidaires détectés dans les conversations.</p>"
+  }
+];
+
+const STORAGE_KEY = "tribunal_drawn_cases_v1";
+
+const deck = document.getElementById('deck');
+const drawBtn = document.getElementById('drawBtn');
+const resetBtn = document.getElementById('resetBtn');
+const remainingEl = document.getElementById('remaining');
+const panel = document.getElementById('casePanel');
+const caseNumBadge = document.getElementById('caseNumBadge');
+const caseTitle = document.getElementById('caseTitle');
+const caseNameTag = document.getElementById('caseNameTag');
+const caseBody = document.getElementById('caseBody');
+const copyBtn = document.getElementById('copyBtn');
+const toast = document.getElementById('toast');
+
+function loadDrawn() {
+  try {
+    const raw = localStorage.getItem(STORAGE_KEY);
+    return raw ? new Set(JSON.parse(raw)) : new Set();
+  } catch { return new Set(); }
+}
+function saveDrawn(set) {
+  try { localStorage.setItem(STORAGE_KEY, JSON.stringify([...set])); } catch {}
+}
+
+let drawn = loadDrawn();
+let isAnimating = false;
+let lastCase = null;
+
+function getRemaining() {
+  return CASES.filter(c => !drawn.has(c.n));
+}
+
+function updateCounter() {
+  const r = getRemaining().length;
+  remainingEl.textContent = r;
+  if (r === 0) {
+    drawBtn.disabled = true;
+    drawBtn.querySelector('.label').textContent = 'Paquet épuisé';
+  } else {
+    drawBtn.disabled = isAnimating;
+    drawBtn.querySelector('.label').textContent = 'Tirer un cas';
+  }
+}
+
+function pickRandom() {
+  const remaining = getRemaining();
+  if (remaining.length === 0) return null;
+  return remaining[Math.floor(Math.random() * remaining.length)];
+}
+
+function setFrontCard(card, c) {
+  const front = card.querySelector('.card-front');
+  front.querySelector('.num').textContent = `Cas n°${String(c.n).padStart(2,'0')}`;
+  front.querySelector('.name').textContent = c.name;
+}
+
+function resetDeckVisual() {
+  panel.classList.remove('visible');
+  [...deck.querySelectorAll('.card')].forEach(card => {
+    card.classList.remove('flipped', 'drawn');
+    card.style.animation = '';
+  });
+  deck.classList.remove('shuffling');
+  deck.classList.add('idle');
+}
+
+async function draw() {
+  if (isAnimating) return;
+  const c = pickRandom();
+  if (!c) return;
+
+  isAnimating = true;
+  drawBtn.disabled = true;
+  panel.classList.remove('visible');
+
+  resetDeckVisual();
+
+  // Préparer la face avant de la carte du dessus (la 5e = au-dessus de la pile)
+  const cards = [...deck.querySelectorAll('.card')];
+  const topCard = cards[cards.length - 1];
+  setFrontCard(topCard, c);
+
+  // Mélange
+  deck.classList.remove('idle');
+  deck.classList.add('shuffling');
+  await wait(1400);
+  deck.classList.remove('shuffling');
+  deck.classList.add('idle');
+  await wait(120);
+
+  // Tirage de la carte du dessus
+  topCard.classList.add('drawn');
+  await wait(1200);
+
+  // Marquer comme tirée + afficher le panneau
+  drawn.add(c.n);
+  saveDrawn(drawn);
+  lastCase = c;
+  showCase(c);
+
+  isAnimating = false;
+  updateCounter();
+}
+
+function showCase(c) {
+  caseNumBadge.textContent = `Cas n°${String(c.n).padStart(2,'0')}`;
+  caseTitle.textContent = c.title;
+  caseNameTag.textContent = `★ ${c.name}`;
+  caseBody.innerHTML = c.body;
+  requestAnimationFrame(() => panel.classList.add('visible'));
+}
+
+function buildCopyText(c) {
+  const tmp = document.createElement('div');
+  tmp.innerHTML = c.body;
+  // Convertir en texte brut lisible
+  tmp.querySelectorAll('li').forEach(li => { li.textContent = '• ' + li.textContent; });
+  const plain = tmp.innerText.replace(/\n{3,}/g, '\n\n').trim();
+  return `Cas n°${String(c.n).padStart(2,'0')} — ${c.title}\n\n${plain}`;
+}
+
+async function copyCase() {
+  if (!lastCase) return;
+  const text = buildCopyText(lastCase);
+  try {
+    await navigator.clipboard.writeText(text);
+  } catch {
+    // Fallback
+    const ta = document.createElement('textarea');
+    ta.value = text;
+    document.body.appendChild(ta);
+    ta.select();
+    try { document.execCommand('copy'); } catch {}
+    document.body.removeChild(ta);
+  }
+  showToast('Copié dans le presse-papier');
+}
+
+function showToast(msg) {
+  toast.textContent = msg;
+  toast.classList.add('show');
+  clearTimeout(showToast._t);
+  showToast._t = setTimeout(() => toast.classList.remove('show'), 1800);
+}
+
+function reset() {
+  drawn = new Set();
+  saveDrawn(drawn);
+  lastCase = null;
+  resetDeckVisual();
+  updateCounter();
+  showToast('Paquet réinitialisé');
+}
+
+function wait(ms) { return new Promise(r => setTimeout(r, ms)); }
+
+drawBtn.addEventListener('click', draw);
+resetBtn.addEventListener('click', reset);
+copyBtn.addEventListener('click', copyCase);
+
+updateCounter();
+</script>
+</body>
+</html>
