@@ -6,6 +6,32 @@
 <title>Tribunal des dilemmes — Tirage au sort</title>
 <link rel="stylesheet" href="retro-base.css">
 <style>
+  /* ====== Sélecteur de langue ====== */
+  .header-side {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end;
+    gap: 10px;
+  }
+  .lang-switch { display: flex; gap: 6px; }
+  .lang-switch button {
+    border: 2px solid var(--retro-teal);
+    background: transparent;
+    color: var(--retro-teal);
+    padding: 3px 12px;
+    border-radius: 50px;
+    cursor: pointer;
+    font-family: 'Oswald', sans-serif;
+    font-weight: 700;
+    letter-spacing: 0.1em;
+    font-size: 0.75rem;
+  }
+  .lang-switch button:hover { border-color: var(--retro-orange); }
+  .lang-switch button[aria-pressed="true"] {
+    background: var(--retro-teal);
+    color: var(--retro-paper);
+  }
+
   /* ====== Layout général ====== */
   .stage {
     min-height: 420px;
@@ -293,6 +319,7 @@
   }
 
   @media (max-width: 600px) {
+    .header-side { align-items: flex-start; }
     .deck { width: 180px; height: 260px; }
     .card-back::after { font-size: 3.6rem; }
     .card-front .name { font-size: 1.8rem; }
@@ -305,10 +332,16 @@
   <div class="page-frame">
     <header class="header-band">
       <div>
-        <h1 class="page-title">Tribunal des dilemmes</h1>
-        <p class="page-subtitle">Tirage au sort des cas pratiques</p>
+        <h1 class="page-title" data-i18n="heading">Tribunal des dilemmes</h1>
+        <p class="page-subtitle" data-i18n="subtitle">Tirage au sort des cas pratiques</p>
       </div>
-      <span class="badge-seq">Séquence 2 — Partie B</span>
+      <div class="header-side">
+        <div class="lang-switch" role="group" aria-label="Langue / Language">
+          <button type="button" data-lang="fr">FR</button>
+          <button type="button" data-lang="en">EN</button>
+        </div>
+        <span class="badge-seq" data-i18n="badge">Séquence 2 — Partie B</span>
+      </div>
     </header>
 
     <div class="stage">
@@ -327,12 +360,12 @@
         <span class="icon">🎴</span>
       </button>
       <button class="retro-btn-pill secondary" id="resetBtn">
-        <span class="label">Réinitialiser le paquet</span>
+        <span class="label" data-i18n="reset">Réinitialiser le paquet</span>
         <span class="icon">↻</span>
       </button>
     </div>
 
-    <p class="counter">Cartes restantes : <span id="remaining">20</span> / 20</p>
+    <p class="counter"><span data-i18n="remaining" class="counter-label">Cartes restantes :</span> <span id="remaining">20</span> / <span id="total">20</span></p>
 
     <article class="case-panel" id="casePanel">
       <header class="case-header">
@@ -343,7 +376,7 @@
       <div class="case-body" id="caseBody"></div>
       <div class="case-actions">
         <button class="retro-btn-pill" id="copyBtn">
-          <span class="label">Copier le cas</span>
+          <span class="label" data-i18n="copy">Copier le cas</span>
           <span class="icon">📋</span>
         </button>
       </div>
@@ -469,12 +502,6 @@ const CASES = [
     body: "<p>Karim dirige un grand établissement secondaire de 1 200 élèves. Suite à plusieurs incidents difficiles l'an dernier — un cas de harcèlement non détecté à temps qui a conduit une élève à changer d'école, une tentative de suicide d'un élève de 4e, un signalement tardif d'une dérive radicale — son équipe lui propose de tester un outil IA qui analyserait en continu les publications des élèves sur l'intranet scolaire et les groupes Teams de l'école.</p><p>L'outil promet de détecter automatiquement les signaux faibles : isolement, expressions de mal-être, propos haineux, indices d'idéation suicidaire ou de radicalisation. Il enverrait une alerte au PMS et à la direction lorsqu'un seuil de probabilité est franchi. Coût annuel : 12 000 €. Le fournisseur affirme qu'aucune donnée n'est exportée hors de l'établissement et que l'outil est « conforme RGPD ».</p><p>Le conseil de participation est divisé. Le PMS y voit une chance d'intervenir plus tôt et soutient le projet. Une représentante des parents évoque la surveillance généralisée et compare l'outil à un « petit panoptique scolaire ». Un élève délégué demande qui décide ce qui est « inquiétant » et ce qui ne l'est pas, et qui audite l'algorithme. Karim doit trancher avant la fin du mois pour signer le contrat.</p>"
   },
   {
-    n: 19,
-    name: "Karim",
-    title: "Prévenir les comportements à risque ou surveiller les élèves ?",
-    body: "<p>L'établissement dirigé par Karim envisage d'utiliser une IA pour analyser les publications des élèves sur les réseaux scolaires internes afin de détecter des signaux de mal-être, d'intimidation ou de radicalisation. L'outil permettrait d'intervenir plus tôt auprès des élèves en difficulté.</p>"
-  },
-  {
     n: 20,
     name: "Léa",
     title: "L'IA confidentielle de l'élève",
@@ -482,12 +509,148 @@ const CASES = [
   }
 ];
 
+/* ====== LANGUES (FR / EN) ======
+   Le français (CASES) reste la source. L'anglais double les seuls textes affichés,
+   indexés par numéro de cas ; un cas absent de CASES_EN retombe sur le français. */
+const UI = {
+  fr: {
+    pageTitle: "Tribunal des dilemmes — Tirage au sort",
+    heading: "Tribunal des dilemmes",
+    subtitle: "Tirage au sort des cas pratiques",
+    badge: "Séquence 2 — Partie B",
+    draw: "Tirer un cas",
+    empty: "Paquet épuisé",
+    reset: "Réinitialiser le paquet",
+    remaining: "Cartes restantes :",
+    copy: "Copier le cas",
+    copied: "Copié dans le presse-papier",
+    resetDone: "Paquet réinitialisé",
+    caseNum: n => `Cas n°${String(n).padStart(2,'0')}`,
+    copyHead: (num, title) => `${num} — ${title}`
+  },
+  en: {
+    pageTitle: "Dilemma Tribunal: Case Draw",
+    heading: "Dilemma Tribunal",
+    subtitle: "Random draw of case studies",
+    badge: "Sequence 2, Part B",
+    draw: "Draw a case",
+    empty: "Deck empty",
+    reset: "Reset the deck",
+    remaining: "Cards remaining:",
+    copy: "Copy the case",
+    copied: "Copied to clipboard",
+    resetDone: "Deck reset",
+    caseNum: n => `Case ${String(n).padStart(2,'0')}`,
+    copyHead: (num, title) => `${num}: ${title}`
+  }
+};
+
+const CASES_EN = {
+  1: {
+    title: "The report card written by AI",
+    body: "<p>Mireille has been teaching 4th year of primary (pupils aged 9 to 10) for eight years. This year she has 28 pupils, and each report-card period takes her three full evenings: she often finishes at midnight, exhausted, copying out phrases she feels she has already written a hundred times. In November, a colleague tells her about ChatGPT.</p><p>Now Mireille types up her handwritten notes on each pupil (“attentive but slow at reading”, “progress in maths, restless in group work”, “fragile pupil, lacks confidence”) and asks the AI to turn them into report-card comments. She reads them over, adjusts a word here, adds a nuance there, and approves them. In two hours, all 28 comments are ready.</p><p>At parents' evenings, several families congratulate her: “You can tell you really know our son, your comments are so accurate.” The year before, some parents had complained about the lack of personalisation. Mireille has told no one about her new method, not even the school management, not even her co-teacher.</p>"
+  },
+  2: {
+    title: "The learning plan generated in two minutes",
+    body: "<p>Thomas is the special educational needs coordinator in a large secondary school. He is following 47 files this year, on top of his teaching hours. A new pupil has just arrived: Émilie, 13, diagnosed with severe dyslexia by the speech therapist at the PMS centre (the psycho-medical-social service attached to Belgian schools). The report runs to six dense pages.</p><p>The rules require an Individual Learning Plan (PIA, <em>Plan Individuel d'Apprentissage</em>) to be written and signed within fifteen days. Thomas is already behind on four other files. He pastes the diagnosis into an AI and asks it to produce a complete PIA: learning objectives, accommodations, assessment arrangements, termly follow-up, recommendations to the teachers of each subject.</p><p>The generated document is structured, professional, and fully compliant with the official template of the Federation (the Wallonia-Brussels Federation, the education authority). Thomas skims it, changes two sentences, signs it and sends it to the management and the parents. The PIA bears his name. It commits him legally to the family, the school and the inspectorate.</p>"
+  },
+  3: {
+    title: "The AI decides who cheated",
+    body: "<p>Samira, 17, in her final year of secondary school (6th year), hands in a French literature essay on Zola. She spent three evenings on it, working from a reference textbook and her class notes. The work is careful and well constructed, with a rich vocabulary: Samira is a good student who has been a reader since childhood.</p><p>The school has just subscribed to an automatic AI-content detection tool. Samira's work is analysed: an 87% probability score of being “AI-generated”. Her French teacher summons her first thing the next morning, shows her a screenshot of the report and announces a zero for the assignment along with a note in her disciplinary record.</p><p>Samira protests, swears she used no AI, and offers to rewrite the essay by hand, on the spot, in front of the teacher. The teacher refuses: “The tool is almost never wrong at that level of score.” The tool itself gives no justification: just a percentage, with no highlighted passages and no explanation of its method. Samira's parents ask for a meeting with the head of school.</p>"
+  },
+  4: {
+    title: "The teaching assistant that replaces human support",
+    body: "<p>Aïcha's school suffers from a chronic staff shortage: three departures not replaced this year, two colleagues off with burnout. The management signs a contract with a start-up offering an educational chatbot available 24/7, accessible to final-year pupils on their smartphones. Cost: €8 per pupil per month, paid by the school. The tool answers questions in maths, physics, French and languages.</p><p>Aïcha teaches mathematics in the final year of secondary (6th year). At first she is sceptical but goes along with it. Three months later, she notices a clear change: not a single hand goes up in class any more. When she offers time for questions, silence falls. One pupil tells her frankly: “It's easier to ask the bot, Miss. It doesn't judge, it answers straight away, and it's patient when I ask ten times.”</p><p>Marks remain stable. The management talks of a “successful experiment” and is considering extending the scheme to 5th-year pupils. Aïcha wonders what exactly she is watching disappear, and whether what is disappearing has a name.</p>"
+  },
+  5: {
+    title: "The cover letter for the pupil",
+    body: "<p>Yannick, a French teacher in the final year of secondary (6th year), helps his pupils every year to write their cover letter for higher education. Most of his pupils come from backgrounds where no one in the family has been to university; some have never written a formal letter.</p><p>This year, he tries something new. He has each pupil fill in a detailed form (background, motivations, plans, personal anecdotes), then feeds this information into an AI to produce a first draft. He prints the draft, sits down with the pupil for half an hour and reworks it sentence by sentence: “that word doesn't sound like you”, “that phrasing is too pompous”, “tell it the way you told me yesterday”.</p><p>The final letters are strong. Several pupils win places on selective programmes. The AI is mentioned nowhere in the letters sent to universities and <em>hautes écoles</em> (university colleges), nor in the sworn statements the pupils signed certifying that the letter was “written personally”.</p>"
+  },
+  6: {
+    title: "The undisclosed “augmented” lessons",
+    body: "<p>Sandrine has been teaching history in secondary school for 12 years. For the past year, she has prepared almost all her lessons with an AI: thematic summaries, chronologies, timelines, mind maps, banks of comprehension questions, teaching scenarios differentiated by level. She systematically checks dates and facts, cross-referencing them with her university textbooks.</p><p>Her pupils say her lessons are among the clearest they have ever had; the school's internal evaluations place her at the top of the department. At team meetings, colleagues ask her how she manages to produce so much high-quality material. She replies that she “works hard” and changes the subject.</p><p>During an in-house training session on AI, a colleague declares in front of the room that “teachers who use AI in secret lack professional courage”. Sandrine does not react. She wonders whether disclosing her use in the middle of the staff room would be courage or recklessness: several older colleagues openly see it as cheating.</p>"
+  },
+  7: {
+    title: "The generated image passed off as authentic",
+    body: "<p>Pierre is preparing a unit on the Second World War for 4th-year secondary pupils (aged 15 to 16). To illustrate the chapter on the exodus and population displacement, he searches in vain for an archive photograph that matches exactly the angle he wants: a family on the move, seen from behind, a country road, autumn. In the end he generates the image with an AI tool: black and white, period clothing, cardboard suitcases, grave expressions, low-angled light.</p><p>The image is striking. Pierre projects it in class without saying where it comes from. Several pupils take notes; one photographs it with his phone and shares it in the class group chat. In the assessment two weeks later, two pupils cite the image in their work as a “photographic source from the period”, one of them even attributing it to an invented photographer.</p><p>When Pierre notices this while marking, he hesitates. In the next lesson, he simply writes a comment in the margin of the papers, without raising the issue in class.</p>"
+  },
+  8: {
+    title: "Assessment corrupted by AI without the pupil knowing",
+    body: "<p>Every week, Joëlle marks around thirty pieces of written work in French, in 5th year of secondary (pupils aged 16 to 17). To save time and to “reassure herself”, she has got into the habit of submitting each paper to an AI with the request: “Mark this work out of 20, justify it in three lines, identify its strengths and weaknesses.”</p><p>She then compares this with her own intuition. When the AI suggests 12 and she was thinking 14, she often goes along with the AI: “after all, it may have seen something I missed”. Within a few months, she realises she no longer really decides on her own: her final marks match the algorithmic assessment in 80% of cases.</p><p>No pupil, parent or colleague knows. On the report cards, it is her signature that appears, and the mark is presented as the product of her professional judgement. When a parent challenges a mark, she is the one who defends the assessment, without saying that she relies on an analysis she did not produce.</p>"
+  },
+  9: {
+    title: "The invisible advantage",
+    body: "<p>Catherine teaches French in 3rd year of secondary (pupils aged 14 to 15). For a few months now, she has noticed that the essays of three pupils, Julie, Hugo and Maxime, have made a leap in quality: impeccable structure, smooth transitions, elevated vocabulary. This bears no relation to their level when speaking or in class, where they remain average.</p><p>At a parents' evening, Julie's mother tells her spontaneously: “We took out a premium ChatGPT subscription for the whole family, it helps them so much with their homework and essays.” Catherine realises that these three pupils systematically use AI to rephrase their texts before handing them in.</p><p>The other 19 pupils in the class have no subscription. Several do not even have a desktop computer at home; two share a single family smartphone. At the next class council (the staff meeting that reviews each pupil's progress), Julie, Hugo and Maxime will be held up as examples for “the quality of their written expression”. Catherine has to decide what to do for the next assessment: ban it? equip everyone? change the nature of the test?</p>"
+  },
+  10: {
+    title: "The pupil with special needs and AI as a permanent crutch",
+    body: "<p>Lucas, 14, has dyspraxia. Writing by hand takes so much effort that after five lines he gives up, his wrist aching. Orally, he analyses, argues and reasons with remarkable subtlety, as his speech therapist has often noted in her reports.</p><p>Since the start of the school year, the school has allowed him to use an AI to structure and write his texts in class. He dictates his ideas, the AI formats them, he reads them over and approves. His written work goes from 8/20 to 16/20 in less than two months. For the first time in his schooling, Lucas tells his parents that he “can write” and that he enjoys it.</p><p>His French teacher notices something else. Lucas never tries to write without the AI any more, not even two lines on the board, not even a word in his planner. When the tool is unavailable, he freezes completely, anxious. His speech therapist is concerned about a regression in the handwriting exercises she gives him in their sessions.</p>"
+  },
+  11: {
+    title: "Gender stereotypes in the technology class",
+    body: "<p>Fatima teaches technology to 1st- and 2nd-year secondary pupils (aged 12 to 14). She is preparing a unit on technical careers and asks an AI to generate a complete pack: exercises, career sheets, colour illustrations ready to print.</p><p>Rereading the material the evening before the lesson, she notices that all the engineers, technicians, mechanics, electricians and welders are depicted as white men in their thirties. The only female figures appear on the “nurse”, “educator” and “secretary” sheets. Of the 24 illustrations in the pack, only two show a woman, and none in a technical job. Three illustrations include racialised people, all in the background.</p><p>Fatima's lesson is in 90 minutes, and the pack has already been printed in 22 copies. She tells herself that “next time” she will take the time to regenerate it or illustrate it differently. She hands out the pack as it is to her 22 pupils, 9 of them girls, 4 of whom come from immigrant backgrounds.</p>"
+  },
+  12: {
+    title: "The AI speaks only one language",
+    body: "<p>Bruno teaches a DASPA reception class (the programme for newly arrived pupils in French-speaking Belgian schools) made up of Syrians, Afghans, Ukrainians, Haitians, Malians and Venezuelans. Levels of French vary widely, and the pupils' journeys have often been traumatic. To save time with a group that changes every week, he uses an AI to generate materials in simplified French.</p><p>The content is indeed more accessible than standard textbooks. But on a careful reread, Bruno spots a series of phrasings that make him uneasy. He hesitates: should he rewrite everything by hand, knowing he will never have the time, or use these materials, “not perfect but better than nothing”?</p><p>Among the phrasings he noted:</p><ul><li><em>“Ask your parents to sign the document”</em>, addressed to an unaccompanied minor with no family contact in Belgium.</li><li><em>“As you know, Christmas is coming, here is an activity on holiday traditions”</em>, with no adaptation to the religious and cultural diversity of the class.</li><li><em>“The head of the family must give written consent”</em>, a phrasing that makes single-parent families, female legal guardians and non-Western family structures invisible.</li><li><em>“In your country, people often eat…”</em>, a sentence that assigns the pupil a presumed origin based on their first name and sends them back to a foreign identity rather than to their actual experience.</li></ul>"
+  },
+  13: {
+    title: "The accepted assisted essay",
+    body: "<p>Élodie teaches French in <em>rhétorique</em>, the final year of secondary school in Belgium. At the start of the year, she sets clear rules with her pupils: for the final essay, they may use an AI to structure their outline, brainstorm arguments and check references, but the writing itself must be 100% their own. She has them sign a usage charter.</p><p>She receives 26 essays on the topic “Should experience be preferred to knowledge?”. While marking, she recognises the same argumentative skeleton in 18 of them: three identical parts, the same authors quoted in the same order (Montaigne, Bachelard, Rousseau), the same logical connectors, the same examples (the journey of initiation, the apprentice, the scientist). The developments are worded differently, but the underlying thinking is the same everywhere: that of the AI.</p><p>When she questions a few pupils orally about how they worked, several answer quite naturally: “I thought it through with ChatGPT, and then I wrote what we'd come up with together.” For them, this is exactly what Élodie had authorised.</p>"
+  },
+  14: {
+    title: "The AI corrects and the pupil no longer understands his mistakes",
+    body: "<p>Matteo, 16, is in 5th year of secondary. He has hated English since primary school: too many rules, too many humiliations reading aloud. Since discovering that an AI could correct his texts in a few seconds, he uses it systematically before every submission: he writes, pastes the text into the AI, asks it to “fix the mistakes but keep my teenage style”, copies the result out by hand and hands it in.</p><p>His marks go from 9/20 to 15/20 in two months. He is pleased. His mother is delighted and congratulates him at every report card.</p><p>His English teacher, John, organises a supervised writing task in class, with no devices and no dictionary. Matteo hands in a paper at A1 level, riddled with basic errors in tenses, subject-verb agreement and the spelling of the most common words: exactly the mistakes he was making six months ago. John realises that during all that time Matteo has learnt absolutely nothing, and that in two years, at the state exam, the AI will not be there.</p>"
+  },
+  15: {
+    title: "The instant answer that short-circuits thinking",
+    body: "<p>Nadia's primary school has installed an AI assistant in the 5th- and 6th-year classes (pupils aged 10 to 12) to help pupils working independently while the teacher works with other groups. The tool answers the children's questions kindly, rephrases, gives examples, encourages. The management is delighted: less noise, more pupils “kept busy”.</p><p>Three months later, Nadia and several colleagues notice a striking change. Before, a pupil who was stuck would reread the instructions, ask a neighbour, look in their exercise book, raise their hand, try. Now they ask the AI within a second, even when the instruction is one they could understand on their own if they took ten seconds to reread it.</p><p>When the tool goes down for two days after an update, several children sit frozen in front of a blank page, panicking. A 6th-year girl tells Nadia: “Without the assistant, Miss, I don't know how to do it.” She is 11.</p>"
+  },
+  16: {
+    title: "AI replaces memorisation",
+    body: "<p>Vincent teaches social sciences in 5th and 6th year of secondary. This year he makes a radical decision, which he defends openly at a department meeting: he will no longer test the memorisation of dates, names or historical facts. In the exam, his pupils will have access to an AI and the internet. He will assess only their ability to analyse, contextualise, argue and cross-check sources.</p><p>His position: “What is the point of making them memorise the date of the Congress of Vienna or the articles of the Belgian Constitution, when anyone can get them in two seconds? I want minds that think, not hard drives competing with Wikipedia.”</p><p>At the department council, two colleagues strongly object: without memorised knowledge, they say, pupils cannot think, they can only rephrase what the AI serves them. “You're training people who can be manipulated, not citizens.” The debate divides the staff room. The management asks Vincent to present and defend his approach at the next participation council (the body bringing together staff, parents and pupils).</p>"
+  },
+  17: {
+    title: "Report or protect?",
+    body: "<p>Hélène teaches French in 4th year of secondary. For a creative writing assignment, she has asked her pupils to imagine a domestic scene seen through the eyes of a teenage character. She receives the text by Léa, 15, and stops short as she reads it.</p><p>The story describes, in the first person, a Sunday evening when the father comes home late, closes the shutters and raises his voice, when the mother fades away into the kitchen, when the narrator locks herself in the bathroom. The details are precise: the smell of beer, the sound of a plate smashing against the wall, the ritual phrase “you know what happens if you talk to anyone”. Nothing goes beyond what can be read in some of the set texts on the curriculum, but something in the texture of the writing makes Hélène uneasy.</p><p>Léa is a brilliant pupil who probably uses an AI for her written work. Hélène knows this; several details have already led her to think so. She wonders: what if the text had simply been prompted from an instruction such as “write a realistic first-person scene of domestic violence”? Reporting to the PMS centre (the school's psycho-medical-social service) on the basis of generated fiction would be absurd and stigmatising. Doing nothing, if the story is true, would be serious professional misconduct.</p>"
+  },
+  18: {
+    title: "The AI's mark versus the teacher's mark",
+    body: "<p>Marc, a physics teacher in 5th year of secondary, hands back the papers for a scientific argumentation assignment on nuclear energy. Hugo receives 6/20 with this comment written in red: “Weak argument, sources not prioritised, circular reasoning on the question of waste.”</p><p>Hugo contests it as soon as the bell rings. The next day, he comes back with a screenshot: he submitted exactly the same work to the AI the class has been using since the start of the year (with the course's explicit permission), asking it to assess it “according to the criteria for a 5th-year secondary physics assignment in the Wallonia-Brussels Federation”. The AI replied: 15/20, “well-structured argument, good use of scientific sources, nuanced conclusion”.</p><p>Hugo emails the head of school, copying Marc in: he requests a formal ruling on the consistency between the AI assessment recommended by the course and the teacher's assessment. Three other pupils, who ran the same check after him, sign the email. The head summons Marc the following morning.</p>"
+  },
+  19: {
+    title: "Preventing risky behaviour or monitoring pupils?",
+    body: "<p>Karim heads a large secondary school of 1,200 pupils. After several difficult incidents last year (a case of bullying not detected in time, which led a pupil to change schools; a suicide attempt by a 4th-year pupil; a late report of a drift into radicalisation), his team suggests he trial an AI tool that would continuously analyse pupils' posts on the school intranet and the school's Teams groups.</p><p>The tool promises to detect weak signals automatically: isolation, expressions of distress, hateful remarks, signs of suicidal ideation or radicalisation. It would send an alert to the PMS centre (the school's psycho-medical-social service) and the management whenever a probability threshold is crossed. Annual cost: €12,000. The supplier states that no data leaves the school and that the tool is “GDPR compliant”.</p><p>The participation council (the body bringing together staff, parents and pupils) is divided. The PMS centre sees it as a chance to intervene earlier and backs the project. A parents' representative raises the spectre of generalised surveillance and compares the tool to a “little school panopticon”. A pupil representative asks who decides what is “worrying” and what is not, and who audits the algorithm. Karim must decide before the end of the month in order to sign the contract.</p>"
+  },
+  20: {
+    title: "The pupil's confidential AI",
+    body: "<p>Léa, 17, is in her final year of secondary school (6th year). A quiet pupil, rather solitary, good in class, never in trouble. For the past year, she has used a paid, mainstream AI chatbot on her phone every day. She has set it up as a permanent confidant: she tells it about her night-time anxiety attacks, her mother's depression, her arguments with her father, her darkest thoughts and her doubts about what to study next. She told a friend that she “tells it things she would never tell anyone else, ever”.</p><p>Her form tutor, Antoine, finds out by chance: Léa left her phone in class with the screen on, and a notification from the app displayed a visible exchange. Antoine did not read it in detail, but he grasped the nature of the relationship: the app addresses Léa by her first name, in a tender tone, and reminds her of “our conversation last night about your father”.</p><p>Antoine wonders what to do. Go and talk to Léa about it? Alert the PMS centre (the school's psycho-medical-social service)? Contact the parents, who may know nothing and whose control Léa is precisely trying to escape? Do nothing, in the name of the privacy of a minor who is almost an adult? He does not even know whether the company running the app has any obligations if suicidal signals are detected in conversations.</p>"
+  }
+};
+
+// Langue de départ : ?lang=en dans l'adresse, sinon le français.
+function langueInitiale() {
+  try {
+    const p = new URLSearchParams(location.search).get('lang');
+    if (p === 'fr' || p === 'en') return p;
+  } catch { /* adresse illisible : français */ }
+  return 'fr';
+}
+
+let lang = langueInitiale();
+function ui() { return UI[lang]; }
+function texteCas(c) {
+  const tr = lang === 'en' ? CASES_EN[c.n] : null;
+  return { title: (tr && tr.title) || c.title, body: (tr && tr.body) || c.body };
+}
+
 const STORAGE_KEY = "tribunal_drawn_cases_v1";
 
 const deck = document.getElementById('deck');
 const drawBtn = document.getElementById('drawBtn');
 const resetBtn = document.getElementById('resetBtn');
 const remainingEl = document.getElementById('remaining');
+const totalEl = document.getElementById('total');
 const panel = document.getElementById('casePanel');
 const caseNumBadge = document.getElementById('caseNumBadge');
 const caseTitle = document.getElementById('caseTitle');
@@ -517,12 +680,13 @@ function getRemaining() {
 function updateCounter() {
   const r = getRemaining().length;
   remainingEl.textContent = r;
+  totalEl.textContent = CASES.length;
   if (r === 0) {
     drawBtn.disabled = true;
-    drawBtn.querySelector('.label').textContent = 'Paquet épuisé';
+    drawBtn.querySelector('.label').textContent = ui().empty;
   } else {
     drawBtn.disabled = isAnimating;
-    drawBtn.querySelector('.label').textContent = 'Tirer un cas';
+    drawBtn.querySelector('.label').textContent = ui().draw;
   }
 }
 
@@ -534,7 +698,7 @@ function pickRandom() {
 
 function setFrontCard(card, c) {
   const front = card.querySelector('.card-front');
-  front.querySelector('.num').textContent = `Cas n°${String(c.n).padStart(2,'0')}`;
+  front.querySelector('.num').textContent = ui().caseNum(c.n);
   front.querySelector('.name').textContent = c.name;
 }
 
@@ -587,20 +751,22 @@ async function draw() {
 }
 
 function showCase(c) {
-  caseNumBadge.textContent = `Cas n°${String(c.n).padStart(2,'0')}`;
-  caseTitle.textContent = c.title;
+  const t = texteCas(c);
+  caseNumBadge.textContent = ui().caseNum(c.n);
+  caseTitle.textContent = t.title;
   caseNameTag.textContent = `★ ${c.name}`;
-  caseBody.innerHTML = c.body;
+  caseBody.innerHTML = t.body;
   requestAnimationFrame(() => panel.classList.add('visible'));
 }
 
 function buildCopyText(c) {
+  const t = texteCas(c);
   const tmp = document.createElement('div');
-  tmp.innerHTML = c.body;
+  tmp.innerHTML = t.body;
   // Convertir en texte brut lisible
   tmp.querySelectorAll('li').forEach(li => { li.textContent = '• ' + li.textContent; });
   const plain = tmp.innerText.replace(/\n{3,}/g, '\n\n').trim();
-  return `Cas n°${String(c.n).padStart(2,'0')} — ${c.title}\n\n${plain}`;
+  return `${ui().copyHead(ui().caseNum(c.n), t.title)}\n\n${plain}`;
 }
 
 async function copyCase() {
@@ -617,7 +783,7 @@ async function copyCase() {
     try { document.execCommand('copy'); } catch {}
     document.body.removeChild(ta);
   }
-  showToast('Copié dans le presse-papier');
+  showToast(ui().copied);
 }
 
 function showToast(msg) {
@@ -633,7 +799,7 @@ function reset() {
   lastCase = null;
   resetDeckVisual();
   updateCounter();
-  showToast('Paquet réinitialisé');
+  showToast(ui().resetDone);
 }
 
 function wait(ms) { return new Promise(r => setTimeout(r, ms)); }
@@ -642,7 +808,36 @@ drawBtn.addEventListener('click', draw);
 resetBtn.addEventListener('click', reset);
 copyBtn.addEventListener('click', copyCase);
 
-updateCounter();
+// Change la langue et redessine les textes : le paquet et le cas affiché restent en place.
+function appliquerLangue(l) {
+  lang = l;
+  document.documentElement.lang = l;
+  document.title = ui().pageTitle;
+  document.querySelectorAll('[data-i18n]').forEach(el => { el.textContent = ui()[el.dataset.i18n]; });
+  document.querySelectorAll('.lang-switch button').forEach(b => {
+    b.setAttribute('aria-pressed', String(b.dataset.lang === l));
+  });
+  updateCounter();
+  if (lastCase) {
+    const cards = [...deck.querySelectorAll('.card')];
+    setFrontCard(cards[cards.length - 1], lastCase);
+    showCase(lastCase);
+  }
+}
+
+document.querySelectorAll('.lang-switch button').forEach(b => {
+  b.addEventListener('click', () => {
+    if (b.dataset.lang === lang) return;
+    appliquerLangue(b.dataset.lang);
+    try {
+      const u = new URL(location.href);
+      u.searchParams.set('lang', lang);
+      history.replaceState(null, '', u);
+    } catch { /* fichier local : la langue vaut pour la session */ }
+  });
+});
+
+appliquerLangue(lang);
 </script>
 </body>
 </html>
